@@ -1,5 +1,12 @@
 package main
 
+/*
+import (
+	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/platforms/dji/tello"
+)
+
+
 import (
 	"fmt"
 	"gobot.io/x/gobot"
@@ -50,3 +57,4 @@ func fly(drone *tello.Driver) {
 	time.Sleep(time.Second * 10)
 	drone.Land()
 }
+*/
