@@ -20,8 +20,8 @@ const (
 
 var img = gocv.NewMat()
 var classifier = gocv.NewCascadeClassifier()
-var rects = classifier.DetectMultiScale(img)
-var face = image.Rectangle{}
+var rect = image.Rectangle{}
+
 var checker = false
 
 func main() {
@@ -54,7 +54,9 @@ func main() {
 			drone.StartVideo()
 			drone.SetExposure(1)
 			drone.SetVideoEncoderRate(4)
+
 			go searchFace(drone)
+
 			if checker == true {
 				go follow(drone)
 			}
@@ -100,6 +102,7 @@ func main() {
 			log.Println("found a face,", rect)
 			gocv.Rectangle(&img, rect, colornames.Cadetblue, 3)
 		}
+
 		window.IMShow(img)
 		if window.WaitKey(1) >= 0 {
 			break
@@ -112,28 +115,52 @@ func main() {
 	}
 }
 
-func searchFace(drone *tello.Driver) { //Classify faces, if no face found - rotate
+func searchFace(drone *tello.Driver) { //If no face found - rotate
 	for {
-		if len(rects) > 0 {
-			*&face = rects[0]
-			checker = true
+		time.After(2 * time.Second)
+		if rect.Empty() {
+			drone.Clockwise(5)
 		} else {
-			drone.Clockwise(30)
+			checker = true
 		}
-
 	}
 }
 
 func follow(drone *tello.Driver) {
 	for {
-		if face.Dx() > 30 && face.Dy() > 50 { //If face rectangle is greater than certain values, fly backwards
-			drone.Backward(10)
+		if isCentered(drone) == "TOOFARLEFT" {
+			drone.Right(10)
+			fmt.Printf("Adjusting Right...")
 
-		} else if face.Dx() < 100 && face.Dy() < 120 {
-			drone.Forward(10)
+		} else if isCentered(drone) == "TOOFARRIGHT" {
+			drone.Left(10)
+			fmt.Printf("Adjusting Left...")
 
-		} else {
-			print("In safe range")
+		} else if isCentered(drone) == "CENTER" {
+			if rect.Dx() < 150 {
+				drone.Forward(5)
+				fmt.Printf("Hovering Forward...")
+
+			} else if rect.Dx() > 250 {
+				drone.Backward(5)
+				fmt.Printf("Hovering Backward...")
+
+			} else {
+				print("In safe range")
+			}
 		}
+	}
+}
+
+func isCentered(drone *tello.Driver) string {
+	if 960-rect.Max.X > rect.Min.X+50 {
+		return "TOOFARLEFT"
+
+	} else if 960-rect.Max.X < rect.Min.X-50 {
+		return "TOOFARRIGHT"
+
+	} else {
+		return "CENTER"
+
 	}
 }
